@@ -6,7 +6,7 @@
 
 #!/bin/bash
 echo Informing slack...
-curl -X 'POST' --silent --data-binary '{"text":"A new build for the room service has started."}' $WEBHOOK > /dev/null
+curl -X 'POST' --silent --data-binary '{"text":"A new build for the concierge service has started."}' $WEBHOOK > /dev/null
 
 mkdir dockercfg ; cd dockercfg
 echo Downloading Docker requirements..
@@ -19,13 +19,6 @@ echo Building projects using gradle...
 ./gradlew build
 echo Building and Starting Concierge Docker Image...
 cd concierge-wlpcfg
-../gradlew buildDockerImage
-../gradlew stopCurrentContainer
-../gradlew removeCurrentContainer
-../gradlew startNewContainer
-
-echo Building and Starting Room Docker Image...
-cd ../room-wlpcfg
 ../gradlew buildDockerImage
 ../gradlew stopCurrentContainer
 ../gradlew removeCurrentContainer

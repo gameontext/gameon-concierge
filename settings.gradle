@@ -1,7 +1,5 @@
-rootProject.name = 'gameon-room'
+rootProject.name = 'gameon-concierge'
 
 include 'app-common'
-include 'room-app'
-include 'room-wlpcfg'
 include 'concierge-app'
 include 'concierge-wlpcfg'
