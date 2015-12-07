@@ -4,17 +4,26 @@ buildscript {
 	repositories {
 	    mavenCentral()
 	}
-	
+
 	dependencies {
 		classpath 'com.bmuschko:gradle-docker-plugin:2.6'
 	}
 }
 
-def dockerHost = System.getenv('DOCKER_HOST')
-
-if (dockerHost.indexOf('tcp') == 0)
+def dockerHost = "https://localhost:2376"
+if (null != System.getenv("DOCKER_HOST"))
 {
-	dockerHost = dockerHost.replace('tcp','https')
+	dockerHost = System.getenv('DOCKER_HOST')
+
+	if (dockerHost.indexOf('tcp') == 0)
+	{
+		dockerHost = dockerHost.replace('tcp','https')
+	}
+}
+
+def dockerCertPath = ""
+if (null != System.getenv('DOCKER_CERT_PATH')){
+	dockerCertPath = System.getenv('DOCKER_CERT_PATH')
 }
 
 def determinedEnvironment = ["LICENSE=accept",
@@ -34,6 +43,9 @@ task copyTask(type: Copy) {
     rename("concierge-app-1.0.war", "concierge-app.war")
 }
 
+task build(dependsOn: ['copyTask']){
+}
+
 apply plugin: 'com.bmuschko.docker-remote-api'
 
 import com.bmuschko.gradle.docker.tasks.container.*
@@ -41,7 +53,7 @@ import com.bmuschko.gradle.docker.tasks.image.*
 
 docker {
     url = dockerHost
-    certPath = new File(System.getenv("DOCKER_CERT_PATH"))
+    certPath = new File(dockerCertPath)
 }
 
 task buildDockerImage(type: DockerBuildImage, dependsOn: 'copyTask') {
@@ -70,4 +82,3 @@ task startNewContainer(type: DockerStartContainer) {
 	dependsOn createNewContainer
 	targetContainerId { "gameon-concierge" }
 }
-
