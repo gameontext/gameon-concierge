@@ -5,6 +5,7 @@
 /servers/*/logs
 /servers/*/workarea
 /servers/.pid
+/servers/gameon-concierge/resources
 /build/
 /servers/.classCache
 /target
