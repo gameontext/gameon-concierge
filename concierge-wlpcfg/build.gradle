@@ -31,11 +31,12 @@ def determinedEnvironment = ["LICENSE=accept",
 			"ADMIN_PASSWORD=" + System.getenv('ADMIN_PASSWORD'),
 			"QUERY_SECRET=" + System.getenv('QUERY_SECRET')]
 
-if (null != System.getenv("LOGGING_DOCKER_HOST"))
+if (null != System.getenv("LOGSTASH_ENDPOINT"))
 {
-	determinedEnvironment << "LOGGING_DOCKER_HOST=" + System.getenv("LOGGING_DOCKER_HOST")
+	determinedEnvironment << "LOGSTASH_ENDPOINT=" + System.getenv("LOGSTASH_ENDPOINT")
+	determinedEnvironment << "LOGSTASH_KEY=" + System.getenv("LOGSTASH_KEY")
+	determinedEnvironment << "LOGSTASH_CERT=" + System.getenv("LOGSTASH_CERT")
 }
-
 
 task copyTask(type: Copy) {
     from '../concierge-app/build/libs/concierge-app-1.0.war'
