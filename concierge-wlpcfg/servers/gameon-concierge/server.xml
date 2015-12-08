@@ -22,7 +22,6 @@
     <!-- This is required to prevent the web apps from being lazily loaded -->
     <webContainer deferServletLoad="false"/>
 
-    <applicationMonitor updateTrigger="mbean"/>
-	<logging traceSpecification="*=info"/>
+    <logging traceSpecification="*=info"/>
     <webApplication contextRoot="/concierge" id="concierge-app" location="concierge-app.war"/>
 </server>
