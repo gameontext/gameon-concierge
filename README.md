@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/grade/0c29c501ba11477f944e109b85817593)](https://www.codacy.com/app/gameontext/gameon-concierge)
 
-This is a service to manage the various rooms available in a game. 
+This is a service to manage the various rooms available in a game.  
 
 
 ## Docker for Concierge App
