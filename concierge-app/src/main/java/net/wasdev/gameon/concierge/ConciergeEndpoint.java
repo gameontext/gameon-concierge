@@ -26,7 +26,7 @@ public class ConciergeEndpoint {
 	public Response getStartingRoom() {
 		RoomToEndpoints startingRoom = c.getStartingRoom();
 
-		if ( startingRoom == null )
+		if (startingRoom == null)
 			return Response.status(404).build();
 
 		RoomToEndpointsWrapper ew = new RoomToEndpointsWrapper();
@@ -40,7 +40,7 @@ public class ConciergeEndpoint {
 	public Response exitRoom(@PathParam("roomId") String roomId, @PathParam("exitName") String exitName) {
 		RoomToEndpoints ec = c.exitRoom(roomId, exitName);
 
-		if ( ec.getEndpoints().isEmpty() )
+		if (ec.getEndpoints().isEmpty())
 			return Response.status(404).build();
 
 		RoomToEndpointsWrapper ew = new RoomToEndpointsWrapper();
@@ -57,8 +57,6 @@ public class ConciergeEndpoint {
 		return Response.ok(ew).build();
 	}
 
-
-
 	@POST
 	@Path("registerRoom")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -66,6 +64,5 @@ public class ConciergeEndpoint {
 	public Response registerRoom(Room room) {
 		return Response.ok(c.registerRoom(room)).build();
 	}
-
 
 }

@@ -8,9 +8,9 @@ import net.wasdev.gameon.room.common.Exit;
 import net.wasdev.gameon.room.common.Room;
 
 public class ManualWiringPlacement implements PlacementStrategy {
-	
-	Map<String, List<Exit>> exitMap = new HashMap<String, List<Exit>>(); 
-	
+
+	Map<String, List<Exit>> exitMap = new HashMap<String, List<Exit>>();
+
 	@Override
 	public String getConnectingRooms(String currentRoom, String exitName) {
 		String roomName = null;
