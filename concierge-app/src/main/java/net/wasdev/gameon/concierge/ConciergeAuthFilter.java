@@ -121,7 +121,7 @@ public class ConciergeAuthFilter implements Filter{
 		}else{
 			sharedSecret = querySecret;
 		}
-		System.out.println("Filter Path: "+path+" Using Key: "+sharedSecret);
+		//System.out.println("Filter Path: "+path+" Using Key: "+sharedSecret);
 		
 		String queryString = null; String apikey = null;
 		int pos = 0; long time = 0;
