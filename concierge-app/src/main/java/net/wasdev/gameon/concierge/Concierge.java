@@ -47,7 +47,10 @@ public class Concierge {
 	}
 
 	public RegistrationResponse registerRoom(Room room) {
-		System.out.println("Processing registration for : \n" + room.toString());
+		boolean reRegistration = roomDirectory.containsKey(room.getRoomName());
+		
+		if(!reRegistration)System.out.println("Processing registration for : \n" + room.toString());
+		
 		RoomToEndpoints rte = roomDirectory.get(room.getRoomName());
 		if (rte == null) {
 			rte = new RoomToEndpoints();
