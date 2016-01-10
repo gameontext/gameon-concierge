@@ -22,12 +22,12 @@ import javax.servlet.http.HttpServletResponse;
 @WebFilter(
 		filterName = "registrationAuthFilter",
 		urlPatterns = {"/*"}
-		  )
+		)
 public class ConciergeAuthFilter implements Filter{
 	private static final String CHAR_SET = "UTF-8";
 	private static final String HMAC_ALGORITHM = "HmacSHA256";
 	private static long timeoutMS = 5000;		//timeout for requests, default to 5 seconds
-	
+
 	@Resource(lookup="registrationSecret")
 	String registrationSecret;
 	@Resource(lookup="querySecret")
@@ -71,10 +71,10 @@ public class ConciergeAuthFilter implements Filter{
 			return true;
 		}
 	}
-	
+
 	private static final Set<UsedKey> usedKeys = 
 			Collections.synchronizedSet(new LinkedHashSet<UsedKey>());	//keys already received, prevent replay attacks
-	
+
 	//the authentication steps that are performed on an incoming request
 	private enum AuthenticationState {
 		hasQueryString,			//starting state
@@ -85,22 +85,22 @@ public class ConciergeAuthFilter implements Filter{
 		PASSED,					//end state
 		ACCESS_DENIED			//end state
 	}
-	
+
 	//ensure consistent parameter names
 	public enum Params {
 		apikey,
 		serviceID,
 		stamp;
-		
+
 		public String toString() {
 			return "&" + this.name() + "=";
 		}		
 	}
-	
+
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
 	}
-	
+
 	private static boolean hasExpired(Long value){
 		return (System.currentTimeMillis() - value) > timeoutMS;
 	}
@@ -108,25 +108,28 @@ public class ConciergeAuthFilter implements Filter{
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
 			throws IOException, ServletException {
-		
+
 		//we're a single filter, but we protect different paths with different keys.		
 		HttpServletRequest http = (HttpServletRequest) request;		
 		String requestUri = http.getRequestURI();
 		//TODO: why did http.getServletPath() return empty string for me?
 		String path = requestUri.substring(http.getContextPath().length());
-						
+
 		String sharedSecret;
-		if("/registerRoom".equals(path)){
+		if("/health".equals(path) || "/startingRoom".equals(path)) {
+			sharedSecret = null;
+		} else if("/registerRoom".equals(path)){
 			sharedSecret = registrationSecret;
 		}else{
 			sharedSecret = querySecret;
 		}
-		
-		String queryString = null; String apikey = null;
-		int pos = 0; long time = 0;
-		AuthenticationState state = AuthenticationState.hasQueryString;		//default
-		while(!state.equals(AuthenticationState.PASSED)) {
-			switch(state) {
+
+		if ( sharedSecret != null ) {
+			String queryString = null; String apikey = null;
+			int pos = 0; long time = 0;
+			AuthenticationState state = AuthenticationState.hasQueryString;		//default
+			while(!state.equals(AuthenticationState.PASSED)) {
+				switch(state) {
 				case hasQueryString :	//check that there is a query string which will contain the service ID and api key
 					queryString = ((HttpServletRequest) request).getQueryString();	//this is the raw version
 					state = (queryString == null) ? AuthenticationState.ACCESS_DENIED : AuthenticationState.hasAPIKeyParam;
@@ -166,13 +169,15 @@ public class ConciergeAuthFilter implements Filter{
 				default :
 					((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN);
 					return;
+				}
 			}
+
+			//request has passed all validation checks, so allow it to proceed
+			request.setAttribute(Params.serviceID.name(), request.getParameter(Params.serviceID.name()));
 		}
-		//request has passed all validation checks, so allow it to proceed
-		request.setAttribute(Params.serviceID.name(), request.getParameter(Params.serviceID.name()));
 		chain.doFilter(request, response);		
 	}
-	
+
 	/*
 	 * Construct a HMAC for this request.
 	 * It is then base 64 and URL encoded ready for transmission as a query parameter.
@@ -188,7 +193,7 @@ public class ConciergeAuthFilter implements Filter{
 			throw new IOException(e);
 		}
 	}
-	
+
 	@Override
 	public void destroy() {
 	}
