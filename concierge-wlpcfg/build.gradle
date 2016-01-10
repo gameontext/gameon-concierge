@@ -82,7 +82,7 @@ task startNewContainer(type: DockerStartContainer) {
 task createNewEtcdContainer(type: DockerCreateContainer) {
 	targetImageId { "gameon-concierge" }
 	containerName = "gameon-concierge"
-	portBindings = ['9084:9080', '9444:9443']
+	portBindings = ['9444:9443']
 	env = etcdEnvironment
 	links = ['etcd:etcd']
 }
