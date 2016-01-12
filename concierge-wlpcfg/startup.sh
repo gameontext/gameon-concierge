@@ -1,3 +1,4 @@
+#!/bin/bash
 if [ "$ETCDCTL_ENDPOINT" != "" ]; then
   echo Setting up etcd...
   wget https://github.com/coreos/etcd/releases/download/v2.2.2/etcd-v2.2.2-linux-amd64.tar.gz -q
