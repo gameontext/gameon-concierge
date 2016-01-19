@@ -29,13 +29,25 @@ public class Concierge {
 	}
 
 	public RoomToEndpoints getStartingRoom() {
-		for (String roomId : startingRooms) {
-			RoomToEndpoints roomCollection = roomDirectory.get(roomId);
-			if (roomCollection != null) {
-				System.out.println("Request for starting room : \n" + roomCollection + "\n" + roomDirectory);
-				return roomCollection;
-
+		boolean first = true;
+		while(first){
+			int roomIndex = 0;
+			
+			if (starterRoomIndex == 0){
+				first = false;
+			}			
+			for (String roomId : startingRooms) {
+				RoomToEndpoints roomCollection = roomDirectory.get(roomId);
+				if (roomCollection != null) {
+					roomIndex++;
+					if (roomIndex > starterRoomIndex){
+						System.out.println("Request for starting room : \n" + roomCollection + "\n" + roomDirectory);
+						starterRoomIndex = roomIndex;
+						return roomCollection;
+					}
+				}
 			}
+			starterRoomIndex = 0;
 		}
 		System.out.println("Request for starting room : \n null\n" + roomDirectory);
 		return null;
