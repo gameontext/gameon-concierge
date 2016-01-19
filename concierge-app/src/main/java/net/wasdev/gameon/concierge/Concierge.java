@@ -16,6 +16,7 @@ import net.wasdev.gameon.room.common.RoomToEndpoints;
 public class Concierge {
 	Map<String, RoomToEndpoints> roomDirectory = new HashMap<String, RoomToEndpoints>();
 	Set<String> startingRooms = new HashSet<String>();
+	int starterRoomIndex = 0;
 
 	PlacementStrategy ps = new ManualWiringPlacement();
 
