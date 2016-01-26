@@ -2,9 +2,12 @@ package net.wasdev.gameon.concierge;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
 import javax.crypto.Mac;
@@ -37,19 +40,26 @@ public class ConciergeAuthFilter implements Filter{
 	String registrationSecret;
 	@Resource(lookup="querySecret")
 	String querySecret;
+	
+
+	Map<String,TimestampedKey> apiKeyForId = Collections.synchronizedMap( new HashMap<String,TimestampedKey>() );
+	
 	/**
-	 * Used API Key (Eg, one that has been seen, and is being tracked to ensure no reuse)
+	 * Timestamped API Key
 	 * Equality / Hashcode is determined by apikey string alone.
 	 * Sort order is provided by key timestamp.
 	 */
-	private final static class UsedKey implements Comparable<UsedKey> {
+	private final static class TimestampedKey implements Comparable<TimestampedKey> {
 		private final String apiKey;
 		private final Long time;
-		public UsedKey(String a,Long t){
+		public TimestampedKey(String a){
+			this.apiKey=a; this.time=System.currentTimeMillis();
+		}
+		public TimestampedKey(String a,Long t){
 			this.apiKey=a; this.time=t;
 		}
 		@Override
-		public int compareTo(UsedKey o) {
+		public int compareTo(TimestampedKey o) {
 			return o.time.compareTo(time);
 		}
 		@Override
@@ -67,7 +77,7 @@ public class ConciergeAuthFilter implements Filter{
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			UsedKey other = (UsedKey) obj;
+			TimestampedKey other = (TimestampedKey) obj;
 			if (apiKey == null) {
 				if (other.apiKey != null)
 					return false;
@@ -77,8 +87,8 @@ public class ConciergeAuthFilter implements Filter{
 		}
 	}
 	
-	private static final Set<UsedKey> usedKeys = 
-			Collections.synchronizedSet(new LinkedHashSet<UsedKey>());	//keys already received, prevent replay attacks
+	private static final Set<TimestampedKey> usedKeys = 
+			Collections.synchronizedSet(new LinkedHashSet<TimestampedKey>());	//keys already received, prevent replay attacks
 	
 	//the authentication steps that are performed on an incoming request
 	private enum AuthenticationState {
@@ -148,8 +158,25 @@ public class ConciergeAuthFilter implements Filter{
 					String id = request.getParameter("id");
 					if(id!=null){
 						playerId = id;
-						//go obtain the apiKey via player Rest endpoint.
-						sharedSecret = playerClient.getApiKey(id);
+						TimestampedKey t = apiKeyForId.get(id);
+						if(t!=null){
+							long current = System.currentTimeMillis();
+							current -= t.time;			
+							//if the key is older than this time period.. we'll consider it dead.
+							boolean valid = current < TimeUnit.DAYS.toMillis(1);							
+							if(valid){							
+								sharedSecret = t.apiKey;
+							}else{
+								apiKeyForId.remove(id);
+								t=null;
+							}
+						}
+						if(t == null){
+							//go obtain the apiKey via player Rest endpoint.
+							sharedSecret = playerClient.getApiKey(id);
+							t = new TimestampedKey(sharedSecret);
+							apiKeyForId.put(id, t);
+						}
 					}		
 					
 					queryString = queryString.substring(0, pos);	//remove API key from end of query string
@@ -162,13 +189,13 @@ public class ConciergeAuthFilter implements Filter{
 					state = hasExpired(time) ? AuthenticationState.ACCESS_DENIED : AuthenticationState.checkReplay;
 					break;
 				case checkReplay : //simple replay check - only allows the one time use of API keys, storing time allows expired keys to be purged
-					boolean alreadyPresent = usedKeys.add(new UsedKey(apikey, time));
+					boolean alreadyPresent = usedKeys.add(new TimestampedKey(apikey, time));
 					//the set of keys is sorted with oldest (smallest) timestamp first so we can iterate from the oldest key, 
 					//and remove all expired ones.
 					synchronized(usedKeys){
-						Iterator<UsedKey> i = usedKeys.iterator();
+						Iterator<TimestampedKey> i = usedKeys.iterator();
 						while(i.hasNext()){
-							UsedKey k = i.next();
+							TimestampedKey k = i.next();
 							if(hasExpired(k.time)){
 								i.remove();
 							}else{
