@@ -9,6 +9,7 @@ import java.util.Set;
 import javax.annotation.Resource;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -27,6 +28,10 @@ public class ConciergeAuthFilter implements Filter{
 	private static final String CHAR_SET = "UTF-8";
 	private static final String HMAC_ALGORITHM = "HmacSHA256";
 	private static long timeoutMS = 5000;		//timeout for requests, default to 5 seconds
+	
+    /** CDI injection of client for Player CRUD operations */
+    @Inject
+    PlayerClient playerClient;
 	
 	@Resource(lookup="registrationSecret")
 	String registrationSecret;
@@ -122,6 +127,8 @@ public class ConciergeAuthFilter implements Filter{
 			sharedSecret = querySecret;
 		}
 		
+		String playerId = null;
+		
 		String queryString = null; String apikey = null;
 		int pos = 0; long time = 0;
 		AuthenticationState state = AuthenticationState.hasQueryString;		//default
@@ -136,6 +143,15 @@ public class ConciergeAuthFilter implements Filter{
 					state = (pos == -1) ? AuthenticationState.ACCESS_DENIED : AuthenticationState.isAPIKeyValid;
 					break;
 				case isAPIKeyValid :	//validate API key against all parameters (except the API key itself)
+					
+					//if there's an id present in the request, then we need to look up the apiKey for that id.
+					String id = request.getParameter("id");
+					if(id!=null){
+						playerId = id;
+						//go obtain the apiKey via player Rest endpoint.
+						sharedSecret = playerClient.getApiKey(id);
+					}		
+					
 					queryString = queryString.substring(0, pos);	//remove API key from end of query string
 					String hmac = request.getParameter(Params.apikey.name());
 					apikey = digest(queryString,sharedSecret);
@@ -169,6 +185,8 @@ public class ConciergeAuthFilter implements Filter{
 			}
 		}
 		//request has passed all validation checks, so allow it to proceed
+		//set the validated player id into the request as an attribute.
+        request.setAttribute("player.id", playerId);
 		request.setAttribute(Params.serviceID.name(), request.getParameter(Params.serviceID.name()));
 		chain.doFilter(request, response);		
 	}

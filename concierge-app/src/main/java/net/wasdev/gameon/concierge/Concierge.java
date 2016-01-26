@@ -59,10 +59,10 @@ public class Concierge {
 		return roomDirectory.get(roomId);
 	}
 
-	public RegistrationResponse registerRoom(Room room) {
+	public RegistrationResponse registerRoom(Room room, String ownerId) {
 		boolean reRegistration = roomDirectory.containsKey(room.getRoomName());
 		
-		if(!reRegistration)System.out.println("Processing registration for : \n" + room.toString());
+		if(!reRegistration)System.out.println("Processing registration by '"+ownerId+"' for : \n" + room.toString());
 		
 		RoomToEndpoints rte = roomDirectory.get(room.getRoomName());
 		if (rte == null) {

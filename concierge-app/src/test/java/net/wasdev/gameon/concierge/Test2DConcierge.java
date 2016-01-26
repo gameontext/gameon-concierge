@@ -48,7 +48,7 @@ public class Test2DConcierge {
 		// We want the room itself to come up and publish to the concierge. So the flow will require the room to say "Here I am concierge"
 		Concierge c = new Concierge(new Simple2DPlacement());
 		Room startingRoom = new Room("Starting Room");
-		c.registerRoom(startingRoom);
+		c.registerRoom(startingRoom,"fish");
 	}
 	
 	@Test
@@ -66,7 +66,7 @@ public class Test2DConcierge {
 		Room eastRoom = new Room("East Room");
 		eastRoom.setAttribute("startLocation", "false");
 		eastRoom.setAttribute("endPoint", "ws://secondRoom");
-		RegistrationResponse response = c.registerRoom(eastRoom);
+		RegistrationResponse response = c.registerRoom(eastRoom,"fish");
 		assertNotNull("Registering the east room should return a valid UUID", response);
 		
 		RoomToEndpoints endpoints = c.exitRoom("Starting Room", "East");
@@ -81,11 +81,11 @@ public class Test2DConcierge {
 		// Add 9 random rooms
 		for(int i =2; i <= 10; i++) {
 			Room room = new Room ("Room " + i);
-			c.registerRoom(room);
+			c.registerRoom(room,"fish");
 		}
 		Room northRoom = new Room("North Room");
 		northRoom.setAttribute("endPoint", "ws://northRoom");
-		c.registerRoom(northRoom);
+		c.registerRoom(northRoom,"fish");
 		RoomToEndpoints connectedRooms = c.exitRoom(startingRoom.getRoomId(), "North");
 		assertEquals("The concierge should be able to find the north room", "ws://northRoom", connectedRooms.getEndpoints().get(0));
 	}
@@ -98,18 +98,18 @@ public class Test2DConcierge {
 		for(int i =2; i <= 10; i++) {
 			Room room = new Room ("Room " + i);
 			room.setAttribute("startLocation", "false");
-			c.registerRoom(room);
+			c.registerRoom(room,"fish");
 		}
 		Room northRoomRegistered = new Room("North Room");
 		northRoomRegistered.setAttribute("startLocation", "false");
 		northRoomRegistered.setAttribute("endPoint", "ws://northroom");
-		RegistrationResponse northRoomRegistration = c.registerRoom(northRoomRegistered);
+		RegistrationResponse northRoomRegistration = c.registerRoom(northRoomRegistered,"fish");
 		assertNotNull("The registration of the North room should return a UUID", northRoomRegistration);
 		
 		Room eastRoomRegistered = new Room("East Room");
 		eastRoomRegistered.setAttribute("startLocation", "false");
 		eastRoomRegistered.setAttribute("endPoint", "ws://eastroom");
-		RegistrationResponse eastRoomRegistration = c.registerRoom(eastRoomRegistered);
+		RegistrationResponse eastRoomRegistration = c.registerRoom(eastRoomRegistered,"fish");
 		assertNotNull("The registeration of the East room should return a UUID", eastRoomRegistration);
 		
 		RoomToEndpoints northRoomEndpoint = c.exitRoom(c.getStartingRoom().getRoomId(), "North");
@@ -131,7 +131,7 @@ public class Test2DConcierge {
 	private Concierge addEasyStartingRoom() {
 		Concierge c = new Concierge(new Simple2DPlacement());
 		Room anEasyRoom = new Room("Starting Room");
-		c.registerRoom(anEasyRoom);
+		c.registerRoom(anEasyRoom,"fish");
 		return c;
 	}
 	
