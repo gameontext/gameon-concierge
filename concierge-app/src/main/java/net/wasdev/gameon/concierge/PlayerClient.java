@@ -125,24 +125,33 @@ public class PlayerClient {
      */
     @PostConstruct
     public void initClient() throws IOException{
-        try {
-			SSLContext context = SSLContext.getDefault();
-			context = SSLContext.getInstance(context.getProtocol());
-			TrustManager[] tms = { tm };
-			context.init(null, tms, null);
-			
+    	//detect local test environment.
+    	if(System.getenv("CONCIERGE_PLAYER_URL").contains("player:9443")){
+	        try {
+				SSLContext context = SSLContext.getDefault();
+				context = SSLContext.getInstance(context.getProtocol());
+				TrustManager[] tms = { tm };
+				context.init(null, tms, null);
+				
+		        Client client = ClientBuilder.newBuilder()
+		        		.hostnameVerifier(hv)
+		        		.sslContext(context)
+		        		.build();
+		        
+		        this.root = client.target(playerLocation);
+		        
+			} catch (NoSuchAlgorithmException e) {
+				throw new IOException(e);
+			} catch (KeyManagementException e) {
+				throw new IOException(e);
+			}
+    	}else{
 	        Client client = ClientBuilder.newBuilder()
 	        		.hostnameVerifier(hv)
-	        		.sslContext(context)
 	        		.build();
 	        
 	        this.root = client.target(playerLocation);
-	        
-		} catch (NoSuchAlgorithmException e) {
-			throw new IOException(e);
-		} catch (KeyManagementException e) {
-			throw new IOException(e);
-		}
+    	}
     }
     
     /**
