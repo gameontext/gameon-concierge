@@ -1,6 +1,8 @@
 package net.wasdev.gameon.concierge;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -129,12 +131,17 @@ public class ConciergeAuthFilter implements Filter{
 		String requestUri = http.getRequestURI();
 		//TODO: why did http.getServletPath() return empty string for me?
 		String path = requestUri.substring(http.getContextPath().length());
-						
+		
+		StringWriter sw = new StringWriter();
+		PrintWriter authLog = new PrintWriter(sw);
+		
 		String sharedSecret;
 		if("/registerRoom".equals(path)){
 			sharedSecret = registrationSecret;
+			authLog.println("AUTH: room registration request");
 		}else{
 			sharedSecret = querySecret;
+			authLog.println("AUTH: concierge query request");
 		}
 		
 		String playerId = null;
@@ -146,24 +153,29 @@ public class ConciergeAuthFilter implements Filter{
 			switch(state) {
 				case hasQueryString :	//check that there is a query string which will contain the service ID and api key
 					queryString = ((HttpServletRequest) request).getQueryString();	//this is the raw version
+					authLog.println("AUTH: hasQuery? "+(queryString == null));
 					state = (queryString == null) ? AuthenticationState.ACCESS_DENIED : AuthenticationState.hasAPIKeyParam;
 					break;
 				case hasAPIKeyParam :	//check there is an apikey parameter
 					pos = queryString.lastIndexOf(Params.apikey.toString());
+					authLog.println("AUTH: hasApiKey? "+(queryString == null));
 					state = (pos == -1) ? AuthenticationState.ACCESS_DENIED : AuthenticationState.isAPIKeyValid;
 					break;
 				case isAPIKeyValid :	//validate API key against all parameters (except the API key itself)
 					
 					//if there's an id present in the request, then we need to look up the apiKey for that id.
 					String id = request.getParameter("id");
-					if(id!=null){
+					authLog.println("AUTH: id param? "+(id == null));
+					if(id!=null){						
 						playerId = id;
 						TimestampedKey t = apiKeyForId.get(id);
+						authLog.println("AUTH: cache hit? "+(t == null));
 						if(t!=null){
 							long current = System.currentTimeMillis();
 							current -= t.time;			
 							//if the key is older than this time period.. we'll consider it dead.
-							boolean valid = current < TimeUnit.DAYS.toMillis(1);							
+							boolean valid = current < TimeUnit.DAYS.toMillis(1);	
+							authLog.println("AUTH: cache still valid? "+(valid));
 							if(valid){							
 								sharedSecret = t.apiKey;
 							}else{
@@ -173,7 +185,14 @@ public class ConciergeAuthFilter implements Filter{
 						}
 						if(t == null){
 							//go obtain the apiKey via player Rest endpoint.
-							sharedSecret = playerClient.getApiKey(id);
+							try{
+								sharedSecret = playerClient.getApiKey(id);
+							}catch(Exception e){
+								authLog.println("AUTH: unable to obtain key from player service?"+(sharedSecret!=null));
+								state = AuthenticationState.ACCESS_DENIED;
+								break;
+							}
+							authLog.println("AUTH: obtained key from player service?"+(sharedSecret!=null));							
 							t = new TimestampedKey(sharedSecret);
 							apiKeyForId.put(id, t);
 						}
@@ -182,11 +201,13 @@ public class ConciergeAuthFilter implements Filter{
 					queryString = queryString.substring(0, pos);	//remove API key from end of query string
 					String hmac = request.getParameter(Params.apikey.name());
 					apikey = digest(queryString,sharedSecret);
+					authLog.println("AUTH: api key validated?"+(apikey.equals(hmac)));
 					state = !apikey.equals(hmac) ? AuthenticationState.ACCESS_DENIED : AuthenticationState.hasKeyExpired;
 					break;
 				case hasKeyExpired :	//check that key has not timed out
 					time = Long.parseLong(request.getParameter(Params.stamp.name()));
 					state = hasExpired(time) ? AuthenticationState.ACCESS_DENIED : AuthenticationState.checkReplay;
+					authLog.println("AUTH: api key expired?"+hasExpired(time));
 					break;
 				case checkReplay : //simple replay check - only allows the one time use of API keys, storing time allows expired keys to be purged
 					boolean alreadyPresent = usedKeys.add(new TimestampedKey(apikey, time));
@@ -203,14 +224,16 @@ public class ConciergeAuthFilter implements Filter{
 							}
 						}
 					}
+					authLog.println("AUTH: api key isReplay?"+alreadyPresent);
 					state = !alreadyPresent ? AuthenticationState.ACCESS_DENIED : AuthenticationState.PASSED;
 					break;
 				case ACCESS_DENIED :
 				default :
-					((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN);
+					((HttpServletResponse)response).sendError(HttpServletResponse.SC_FORBIDDEN, sw.toString());
 					return;
 			}
 		}
+		authLog.close();
 		//request has passed all validation checks, so allow it to proceed
 		//set the validated player id into the request as an attribute.
         request.setAttribute("player.id", playerId);
