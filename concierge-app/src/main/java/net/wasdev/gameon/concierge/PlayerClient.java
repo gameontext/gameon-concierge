@@ -3,29 +3,25 @@ package net.wasdev.gameon.concierge;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.Key;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Calendar;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ResponseProcessingException;
-import javax.ws.rs.client.WebTarget;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,49 +67,6 @@ public class PlayerClient {
     /** The Key to Sign JWT's with (once it's loaded) */
     private static Key signingKey = null;
 
-    /**
-     * The root target used to define the root path and common query parameters
-     * for all outbound requests to the concierge service.
-     *
-     * @see WebTarget
-     */
-    WebTarget root;
-
-    /**
-     * A Trust Manager that checks nothing.. ideal for talking via SSL via self signed
-     * certificates etc.
-     */
-    private static class NullX509TrustManager implements X509TrustManager {
-     public void checkClientTrusted(X509Certificate[] chain, String authType)
-       throws CertificateException {
-     }
-     
-     public void checkServerTrusted(X509Certificate[] chain, String authType)
-       throws CertificateException {
-     }
-     
-     public X509Certificate[] getAcceptedIssuers() {
-      return new X509Certificate[0];
-     }
-     
-    }
-    
-    /** The one and only (thread-safe) TrustManager */
-    private static X509TrustManager tm = new NullX509TrustManager();
-     
-    /** 
-     * A hostname verifier that also doesn't check anything, ideal when talking 
-     * to SSL hosts that have certificates with one hostname, that are being 
-     * accessed via another hostname (eg, via docker network)
-     */
-    private static class NullHostnameVerifier implements HostnameVerifier {
-     public boolean verify(String hostname, SSLSession session) {
-      return true;
-     }
-    }
-
-    /** The one and only (thread-safe) HostName Verifier */
-    private static HostnameVerifier hv = new NullHostnameVerifier();
     
     /**
      * The {@code @PostConstruct} annotation indicates that this method should
@@ -124,32 +77,7 @@ public class PlayerClient {
      * @see ApplicationScoped
      */
     @PostConstruct
-    public void initClient() throws IOException{
-    	//detect local test environment.
-    	if(System.getenv("CONCIERGE_PLAYER_URL").contains("player:9443")){
-	        try {
-				SSLContext context = SSLContext.getDefault();
-				context = SSLContext.getInstance(context.getProtocol());
-				TrustManager[] tms = { tm };
-				context.init(null, tms, null);
-				
-		        Client client = ClientBuilder.newBuilder()
-		        		.hostnameVerifier(hv)
-		        		.sslContext(context)
-		        		.build();
-		        
-		        this.root = client.target(playerLocation);
-		        
-			} catch (NoSuchAlgorithmException e) {
-				throw new IOException(e);
-			} catch (KeyManagementException e) {
-				throw new IOException(e);
-			}
-    	}else{
-    		Client client = ClientBuilder.newClient();
-	        
-	        this.root = client.target(playerLocation);
-    	}
+    public void initClient(){
     }
     
     /**
@@ -239,18 +167,19 @@ public class PlayerClient {
     	System.out.println("In getApiKey for "+playerId);
     	String jwt = getClientJwtForId(playerId);
     	
+    	HttpClient client = HttpClientBuilder.create().build();
+    	HttpGet hg = new HttpGet(playerLocation+"/"+playerId+"?jwt="+jwt);
+    	
     	System.out.println("Building web target "+playerLocation);
-        WebTarget target = this.root.path("{playerId}")
-        		.resolveTemplate("playerId", playerId)
-        		.queryParam("jwt",jwt);
-        
-        System.out.println("target is now "+target.toString());
-
+     
         try {
         	System.out.println("Invoking target.. ");
             // Make GET request using the specified target, get result as a
             // string containing JSON
-            String result = target.request().get(String.class);
+        	HttpResponse r = client.execute(hg);
+        	String result = new BasicResponseHandler().handleResponse(r);
+            
+            System.out.println("Got response "+result);
             
             System.out.println("Got response "+result);
             
