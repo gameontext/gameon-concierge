@@ -146,9 +146,7 @@ public class PlayerClient {
 				throw new IOException(e);
 			}
     	}else{
-	        Client client = ClientBuilder.newBuilder()
-	        		.hostnameVerifier(hv)
-	        		.build();
+    		Client client = ClientBuilder.newClient();
 	        
 	        this.root = client.target(playerLocation);
     	}
