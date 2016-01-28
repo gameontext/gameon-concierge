@@ -238,17 +238,23 @@ public class PlayerClient {
      * @return The apiKey for the player
      */
     public String getApiKey(String playerId) throws IOException {
-
+    	System.out.println("In getApiKey for "+playerId);
     	String jwt = getClientJwtForId(playerId);
-
+    	
+    	System.out.println("Building web target "+playerLocation);
         WebTarget target = this.root.path("{playerId}")
         		.resolveTemplate("playerId", playerId)
         		.queryParam("jwt",jwt);
+        
+        System.out.println("target is now "+target.toString());
 
         try {
+        	System.out.println("Invoking target.. ");
             // Make GET request using the specified target, get result as a
             // string containing JSON
             String result = target.request().get(String.class);
+            
+            System.out.println("Got response "+result);
             
             // Parse the JSON response, and retrieve the apiKey field value.
             ObjectMapper om = new ObjectMapper();
