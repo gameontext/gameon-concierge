@@ -170,7 +170,7 @@ public class ConciergeAuthFilter implements Filter{
 		String key = null;
 		//check cache for this id.
 		TimestampedKey t = apiKeyForId.get(id);
-		ctx.failLog.println("AUTH: cache hit? "+(t == null));
+		ctx.failLog.println("AUTH: cache hit? "+(t != null));
 		if(t!=null){
 			//cache hit, but is the key still valid?
 			long current = System.currentTimeMillis();
@@ -214,7 +214,7 @@ public class ConciergeAuthFilter implements Filter{
 		String sharedSecret = secret;
 		
 		//if there's an id present in the request, then we need to look up the apiKey for that id.
-		ctx.failLog.println("AUTH: id param? "+(id == null));
+		ctx.failLog.println("AUTH: id param? "+(id != null));
 		if(id!=null){						
 			sharedSecret = getAPIKeyForId(id, ctx);
 		}		
