@@ -181,6 +181,8 @@ public class PlayerClient {
             
             System.out.println("Got response "+result);
             
+            System.out.println("Got response "+result);
+            
             // Parse the JSON response, and retrieve the apiKey field value.
             ObjectMapper om = new ObjectMapper();
             JsonNode jn = om.readValue(result,JsonNode.class);
