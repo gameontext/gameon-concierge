@@ -232,8 +232,6 @@ public class ConciergeAuthFilter implements Filter{
 		String hmac = request.getParameter(Params.apikey.name());
 		String apikey = digest(queryString,sharedSecret);
 		
-		System.out.println("comparing "+hmac+" TO "+apikey);
-		
 		//store the apiKey for the replay check
 		ctx.apiKey = apikey;
 		
