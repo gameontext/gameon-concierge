@@ -164,28 +164,20 @@ public class PlayerClient {
      * @return The apiKey for the player
      */
     public String getApiKey(String playerId) throws IOException {
-    	System.out.println("In getApiKey for "+playerId);
     	String jwt = getClientJwtForId(playerId);
     	
     	HttpClient client = HttpClientBuilder.create().build();
     	HttpGet hg = new HttpGet(playerLocation+"/"+playerId+"?jwt="+jwt);
     	
-    	System.out.println("Building web target "+playerLocation);
-     
         try {
-        	System.out.println("Invoking target.. ");
             // Make GET request using the specified target, get result as a
             // string containing JSON
         	HttpResponse r = client.execute(hg);
         	String result = new BasicResponseHandler().handleResponse(r);
-            
-            System.out.println("Got response "+result);
                      
             // Parse the JSON response, and retrieve the apiKey field value.
             ObjectMapper om = new ObjectMapper();
             JsonNode jn = om.readValue(result,JsonNode.class);
-            
-            System.out.println("Returning key "+jn.get("apiKey").textValue());
             
             return jn.get("apiKey").textValue();
         } catch (ResponseProcessingException rpe) {
