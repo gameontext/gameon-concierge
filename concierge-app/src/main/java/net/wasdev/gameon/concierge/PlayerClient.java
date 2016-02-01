@@ -8,7 +8,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Calendar;
 
 import javax.annotation.PostConstruct;
@@ -24,11 +23,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.TrustStrategy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -171,7 +167,6 @@ public class PlayerClient {
      * @return The apiKey for the player
      */
     public String getApiKey(String playerId) throws IOException {
-    	System.out.println("In getApiKey for "+playerId);
     	String jwt = getClientJwtForId(playerId);
     	
     	HttpClient client = null;
@@ -203,19 +198,14 @@ public class PlayerClient {
     	System.out.println("Building web target "+hg.getURI().toString());
      
         try {
-        	System.out.println("Invoking target.. ");
             // Make GET request using the specified target, get result as a
             // string containing JSON
         	HttpResponse r = client.execute(hg);
         	String result = new BasicResponseHandler().handleResponse(r);
-            
-            System.out.println("Got response "+result);
                      
             // Parse the JSON response, and retrieve the apiKey field value.
             ObjectMapper om = new ObjectMapper();
             JsonNode jn = om.readValue(result,JsonNode.class);
-            
-            System.out.println("Returning key "+jn.get("apiKey").textValue());
             
             return jn.get("apiKey").textValue();
         } catch (HttpResponseException hre) {
