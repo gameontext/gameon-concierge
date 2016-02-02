@@ -13,13 +13,16 @@ import java.util.Calendar;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.enterprise.context.ApplicationScoped;
+import javax.net.ssl.SSLContext;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.ResponseProcessingException;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 
@@ -166,9 +169,34 @@ public class PlayerClient {
     public String getApiKey(String playerId) throws IOException {
     	String jwt = getClientJwtForId(playerId);
     	
-    	HttpClient client = HttpClientBuilder.create().build();
+    	HttpClient client = null;
+    	if("development".equals(System.getenv("CONCIERGE_PLAYER_MODE"))){
+    		System.out.println("Using development mode player connection. (DefaultSSL,NoHostNameValidation)");
+    		try{
+	    		HttpClientBuilder b = HttpClientBuilder.create();
+	    		
+	    		//use the default ssl context, we have a trust store configured for player cert.
+	    		SSLContext sslContext = SSLContext.getDefault();
+	    		
+	    		//use a very trusting truststore.. (not needed..)
+	    		//SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
+	    		    	
+	    		b.setSSLContext( sslContext);
+	    		
+	    		//disable hostname validation, because we'll need to access the cert via a different hostname.
+	    		b.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+	    		
+	    		client = b.build();
+    		}catch(Exception e){
+    			throw new IOException(e);
+    		}
+    	}else{
+    		client = HttpClientBuilder.create().build();
+    	}
     	HttpGet hg = new HttpGet(playerLocation+"/"+playerId+"?jwt="+jwt);
     	
+    	System.out.println("Building web target "+hg.getURI().toString());
+     
         try {
             // Make GET request using the specified target, get result as a
             // string containing JSON
@@ -180,6 +208,9 @@ public class PlayerClient {
             JsonNode jn = om.readValue(result,JsonNode.class);
             
             return jn.get("apiKey").textValue();
+        } catch (HttpResponseException hre) {
+        	System.out.println("Error communicating with player service: "+hre.getStatusCode()+" "+hre.getMessage());
+            throw hre;
         } catch (ResponseProcessingException rpe) {
         	System.out.println("Error processing response "+rpe.getResponse().toString());
             throw new IOException(rpe);
@@ -187,6 +218,9 @@ public class PlayerClient {
         	//bad stuff.
         	System.out.println("Hmm.. "+ex.getMessage());
         	throw new IOException(ex);
+        } catch(IOException io){
+        	System.out.println("Utoh.. "+io.getMessage());
+        	throw new IOException(io);
         }
 
     }
