@@ -70,7 +70,7 @@ task removeCurrentContainer(type: DockerRemoveContainer) {
 task createNewContainer(type: DockerCreateContainer) {
 	targetImageId { "gameon-concierge" }
 	containerName = "gameon-concierge"
-	portBindings = ['9081:9081']
+	portBindings = ['9081:9080', '9444:9443']
 	env = localEnvironment
 }
 
@@ -82,7 +82,7 @@ task startNewContainer(type: DockerStartContainer) {
 task createNewEtcdContainer(type: DockerCreateContainer) {
 	targetImageId { "gameon-concierge" }
 	containerName = "gameon-concierge"
-	portBindings = ['9081:9081']
+	portBindings = ['9081:9080', '9444:9443']
 	env = etcdEnvironment
 	links = ['etcd:etcd']
 }
@@ -91,4 +91,3 @@ task startNewEtcdContainer(type: DockerStartContainer) {
 	dependsOn createNewEtcdContainer
 	targetContainerId { "gameon-concierge" }
 }
-

@@ -9,13 +9,13 @@
         <feature>ssl-1.0</feature>
         <feature>jsonp-1.0</feature>
     </featureManager>
-    
+
     <!-- To access this server from a remote client add a host attribute to the following element, e.g. host="*" -->
-    <httpEndpoint host="*" httpPort="9081" httpsPort="9444" id="defaultHttpEndpoint"/>
+    <httpEndpoint host="*" httpPort="9080" httpsPort="9443" id="defaultHttpEndpoint"/>
 
   	<keyStore id="defaultKeyStore" password="testOnlyKeystore"/>
   	<keyStore id="defaultTrustStore" location="truststore.jks" password="truststore"/>
-  	
+
   	<sslDefault sslRef="DefaultSSLSettings"/>
     <ssl id="DefaultSSLSettings" keyStoreRef="defaultKeyStore" trustStoreRef="defaultTrustStore"/>
 
@@ -23,12 +23,12 @@
 	<jndiEntry jndiName="jwtKeyStore" value="${server.config.dir}/resources/security/key.jks"/>
 	<jndiEntry jndiName="jwtKeyStorePassword" value="testOnlyKeystore"/>
 	<jndiEntry jndiName="jwtKeyStoreAlias" value="default"/>
-	
+
 	<jndiEntry jndiName="playerUrl" value="${env.CONCIERGE_PLAYER_URL}"/>
 
     <!-- This is our private backend room registration key, only used for recroom/nodejs etc -->
     <jndiEntry jndiName="registrationSecret" value="${env.REGISTRATION_SECRET}"/>
-    
+
     <!-- This one is a fixed shared key between concierge and it's consumers -->
     <jndiEntry jndiName="querySecret" value="${env.QUERY_SECRET}"/>
 
